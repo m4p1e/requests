@@ -32,7 +32,7 @@ import (
 	"time"
 )
 
-var VERSION string = "0.6"
+var VERSION string = "0.6" //maybe 0.7
 
 type request struct {
 	httpreq *http.Request
