@@ -71,6 +71,50 @@ func main (){
 }
 
 ```
+# Chunking
+
+Chunking is send a request with tranfer-encoding : chunked
+
+``` go
+package main
+
+import (
+  "github.com/m4p1e/requests"
+  "fmt"
+  "io"
+  "time"
+)
+
+func main() {
+
+    rd, wr := io.Pipe()
+    
+    go func(){
+
+    b1 :=[]byte("test first!!!")
+
+    wr.Write(b1)
+
+    time.Sleep(5 *time.Second)
+
+    b2 :=[]byte("test second!")
+
+    wr.Write(b2)
+
+    b3 :=make([]byte,0)
+
+    wr.Write(b3)
+
+
+    }()
+
+    req,_:= requests.Chunking("http://127.0.0.1:9094",rd)
+
+    fmt.Println(string(req.Content()))
+
+}
+```
+  
 
 # Feature Support
   - Set headers
@@ -80,12 +124,23 @@ func main (){
   - Proxy
   - Authentication
   - JSON
-  - Chunked Requests
+  - Chunked Requests  ido
   - Debug
   - SetTimeout
 
+# EnableCookie
+
+it will using the Cookiejar in go
+
+
+``` go
+requests.EnableKeepCookie()
+
+```
+
 
 # Set header
+
 
 ### example 1
 
