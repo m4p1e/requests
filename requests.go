@@ -34,6 +34,8 @@ import (
 
 var VERSION string = "0.6" //maybe 0.7
 
+var EnableCookie bool = false 
+
 type request struct {
 	httpreq *http.Request
 	Header  *http.Header
@@ -75,9 +77,14 @@ func Requests() *request {
 
 	// auto with Cookies
 	// cookiejar.New source code return jar, nil
-	jar, _ := cookiejar.New(nil)
 
-	req.Client.Jar = jar
+	if EnableCookie == true{
+
+		jar, _ := cookiejar.New(nil)
+
+		req.Client.Jar = jar
+
+	}
 
 	return req
 }
@@ -99,7 +106,7 @@ func (req *request) Get(origurl string, args ...interface{}) (resp *response, er
 
 	//reset Cookies,
 	//Client.Do can copy cookie from client.Jar to req.Header
-	delete(req.httpreq.Header, "Cookie")
+	//delete(req.httpreq.Header, "Cookie")
 
 	for _, arg := range args {
 		switch a := arg.(type) {
@@ -263,14 +270,7 @@ func (resp *response) Content() []byte {
 	var err error
 
 	var Body = resp.R.Body
-	if resp.R.Header.Get("Content-Encoding") == "gzip" && resp.req.Header.Get("Accept-Encoding") != "" {
-		// fmt.Println("gzip")
-		reader, err := gzip.NewReader(Body)
-		if err != nil {
-			return nil
-		}
-		Body = reader
-	}
+
 
 	resp.content, err = ioutil.ReadAll(Body)
 	if err != nil {
@@ -471,4 +471,11 @@ func openFile(filename string) *os.File {
 		panic(err)
 	}
 	return r
+}
+
+func EnableKeepCookie(){
+
+	EnableCookie = true
+
+
 }
