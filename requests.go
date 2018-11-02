@@ -16,7 +16,7 @@ package requests
 
 import (
 	"bytes"
-	"compress/gzip"
+	//"compress/gzip"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
