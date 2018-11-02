@@ -91,6 +91,66 @@ func Requests() *request {
 
 // Get ,req.Get
 
+func Chunking(origurl string,Body io.ReadCloser,args ...interface{})(resp *response, err error){
+
+	req := Requests()
+
+
+	req.httpreq.Method = "POST"
+
+	req.httpreq.ContentLength = -1
+
+	req.httpreq.Body = Body
+
+
+	params := []map[string]string{}
+
+
+	for _, arg := range args {
+		switch a := arg.(type) {
+		// arg is Header , set to request header
+		case Header:
+
+			for k, v := range a {
+				req.Header.Set(k, v)
+			}
+			// arg is "GET" params
+			// ?title=website&id=1860&from=login
+		case Params:
+			params = append(params, a)
+		case Auth:
+			// a{username,password}
+			req.httpreq.SetBasicAuth(a[0], a[1])
+		}
+	}
+
+	disturl, _ := buildURLParams(origurl, params...)
+
+	URL, err := url.Parse(disturl)
+
+	if err != nil {
+		return nil, err
+	}
+
+	req.httpreq.URL = URL
+
+
+	res, err := req.Client.Do(req.httpreq)
+
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	resp = &response{}
+	resp.R = res
+	resp.req = req
+	resp.ResponseDebug()
+	return resp, nil
+
+}
+
+
 func Get(origurl string, args ...interface{}) (resp *response, err error) {
 	req := Requests()
 
@@ -135,7 +195,7 @@ func (req *request) Get(origurl string, args ...interface{}) (resp *response, er
 	}
 	req.httpreq.URL = URL
 
-	req.ClientSetCookies()
+	//req.ClientSetCookies()
 
 	req.RequestDebug()
 
@@ -196,12 +256,12 @@ func (req *request) RequestDebug() {
 	}
 	fmt.Println(string(message))
 
-	if len(req.Client.Jar.Cookies(req.httpreq.URL)) > 0 {
+	/*if len(req.Client.Jar.Cookies(req.httpreq.URL)) > 0 {
 		fmt.Println("Cookies:")
 		for _, cookie := range req.Client.Jar.Cookies(req.httpreq.URL) {
 			fmt.Println(cookie)
 		}
-	}
+	}*/
 }
 
 // cookies
@@ -312,12 +372,19 @@ func (resp *response) Json(v interface{}) error {
 }
 
 func (resp *response) Cookies() (cookies []*http.Cookie) {
-	httpreq := resp.req.httpreq
-	client := resp.req.Client
+	
+	if(EnableCookie == true){
+		httpreq := resp.req.httpreq
+		client := resp.req.Client
 
-	cookies = client.Jar.Cookies(httpreq.URL)
+		cookies = client.Jar.Cookies(httpreq.URL)
 
-	return cookies
+		return cookies
+	}
+
+
+
+	return resp.R.Cookies()
 
 }
 
@@ -346,7 +413,7 @@ func (req *request) Post(origurl string, args ...interface{}) (resp *response, e
 
 	//reset Cookies,
 	//Client.Do can copy cookie from client.Jar to req.Header
-	delete(req.httpreq.Header, "Cookie")
+	//delete(req.httpreq.Header, "Cookie")
 
 	for _, arg := range args {
 		switch a := arg.(type) {
@@ -387,7 +454,7 @@ func (req *request) Post(origurl string, args ...interface{}) (resp *response, e
 	}
 	req.httpreq.URL = URL
 
-	req.ClientSetCookies()
+	//req.ClientSetCookies()
 
 	req.RequestDebug()
 
