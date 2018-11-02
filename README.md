@@ -3,12 +3,12 @@
 
 # requests
 
-Requests is an HTTP library  , it is easy to use. Similar to Python requests.
+Requests is an HTTP library  , it is easy to use. Similar to Python requests.  I want make it better with all my love by maple
 
 # Installation
 
 ```
-go get -u github.com/asmcos/requests
+go get -u github.com/m4p1e/requests
 ```
 
 # Start
@@ -16,11 +16,11 @@ go get -u github.com/asmcos/requests
 ``` go
 package main
 
-import "github.com/asmcos/requests"
+import "github.com/m4p1e/requests"
 
 func main (){
 
-        resp,err := requests.Get("http://go.xiulian.net.cn")
+        resp,err := requests.Get("http://m4p1e.com")
         if err != nil{
           return
         }
@@ -33,7 +33,7 @@ func main (){
 ``` go
 package main
 
-import "github.com/asmcos/requests"
+import "github.com/m4p1e/requests"
 
 
 func main (){
@@ -108,13 +108,12 @@ func main() {
 
     }()
 
-    req,_:= requests.Chunking("http://127.0.0.1:9094",rd)
+    req,_:= requests.Chunking("http://127.0.0.1:9999",rd)
 
     fmt.Println(string(req.Content()))
 
 }
 ```
-  
 
 # Feature Support
   - Set headers
@@ -147,7 +146,7 @@ requests.EnableKeepCookie()
 ``` go
 req := requests.Requests()
 
-resp,err := req.Get("http://go.xiulian.net.cn",requests.Header{"Referer":"http://www.jeapedu.com"})
+resp,err := req.Get("http://m4p1e.com",requests.Header{"Referer":"http://www.jeapedu.com"})
 if (err == nil){
   println(resp.Text())
 }
@@ -158,7 +157,7 @@ if (err == nil){
 ``` go
 req := requests.Requests()
 req.Header.Set("accept-encoding", "gzip, deflate, br")
-resp,_ := req.Get("http://go.xiulian.net.cn",requests.Header{"Referer":"http://www.jeapedu.com"})
+resp,_ := req.Get("http://m4p1e.com",requests.Header{"Referer":"http://www.jeapedu.com"})
 println(resp.Text())
 
 ```
@@ -170,7 +169,7 @@ h := requests.Header{
   "Referer":         "http://www.jeapedu.com",
   "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
 }
-resp,_ := req.Get("http://go.xiulian.net.cn",h)
+resp,_ := req.Get("http://m4p1e.com",h)
 
 h2 := requests.Header{
   ...
@@ -178,7 +177,7 @@ h2 := requests.Header{
 }
 h3,h4 ....
 // two or more headers ...
-resp,_ = req.Get("http://go.xiulian.net.cn",h,h2,h3,h4)
+resp,_ = req.Get("http://m4p1e.com",h,h2,h3,h4)
 ```
 
 
