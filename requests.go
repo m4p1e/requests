@@ -30,11 +30,14 @@ import (
 	"os"
 	"strings"
 	"time"
+	
 )
 
-var VERSION string = "0.6" //maybe 0.7
+var VERSION string = "0.8" //maybe 0.7
 
 var EnableCookie bool = false 
+
+var StartDebug bool = false
 
 type request struct {
 	httpreq *http.Request
@@ -55,6 +58,7 @@ type Header map[string]string
 type Params map[string]string
 type Datas map[string]string // for post form
 type Files map[string]string // name ,filename
+type ToJson interface{} // send json from the map
 
 // {username,password}
 type Auth []string
@@ -73,7 +77,9 @@ func Requests() *request {
 	req.Header = &req.httpreq.Header
 	req.httpreq.Header.Set("User-Agent", "Go-Requests "+VERSION)
 
-	req.Client = &http.Client{}
+	req.Client = &http.Client{Transport:&http.Transport{
+			TLSClientConfig :&tls.Config{InsecureSkipVerify: true},
+		}}
 
 	// auto with Cookies
 	// cookiejar.New source code return jar, nil
@@ -83,6 +89,12 @@ func Requests() *request {
 		jar, _ := cookiejar.New(nil)
 
 		req.Client.Jar = jar
+
+	}
+	
+	if StartDebug == true{
+
+		req.Debug = 1
 
 	}
 
@@ -197,10 +209,8 @@ func (req *request) Get(origurl string, args ...interface{}) (resp *response, er
 
 	//req.ClientSetCookies()
 
-	req.RequestDebug()
-
 	res, err := req.Client.Do(req.httpreq)
-
+	req.RequestDebug()
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
@@ -250,18 +260,23 @@ func (req *request) RequestDebug() {
 
 	fmt.Println("===========Go RequestDebug ============")
 
-	message, err := httputil.DumpRequestOut(req.httpreq, false)
+	message, err := httputil.DumpRequestOut(req.httpreq, true)
 	if err != nil {
+		fmt.Println(err)
 		return
 	}
-	fmt.Println(string(message))
 
-	/*if len(req.Client.Jar.Cookies(req.httpreq.URL)) > 0 {
-		fmt.Println("Cookies:")
-		for _, cookie := range req.Client.Jar.Cookies(req.httpreq.URL) {
-			fmt.Println(cookie)
+	//fmt.Println("a")
+	fmt.Println(string(message))
+	//fmt.Printf("%q",message)
+	if(req.Client.Jar!=nil){
+		if len(req.Client.Jar.Cookies(req.httpreq.URL)) > 0 {
+			fmt.Println("Cookies:")
+			for _, cookie := range req.Client.Jar.Cookies(req.httpreq.URL) {
+				fmt.Println(cookie)
+			}
 		}
-	}*/
+	}
 }
 
 // cookies
@@ -321,6 +336,16 @@ func (resp *response) ResponseDebug() {
 	}
 
 	fmt.Println(string(message))
+
+}
+
+func (resp *response) Discard(){
+
+	fmt.Println("Status:",resp.R.StatusCode)
+
+	io.Copy(ioutil.Discard, resp.R.Body)
+
+	resp.R.Body.Close()
 
 }
 
@@ -394,22 +419,25 @@ func Post(origurl string, args ...interface{}) (resp *response, err error) {
 	req := Requests()
 
 	// call request Get
-	resp, err = req.Post(origurl, args...)
+	resp, err = req.Post(origurl,args...)
 	return resp, err
 }
 
 // POST requests
 
-func (req *request) Post(origurl string, args ...interface{}) (resp *response, err error) {
+func (req *request) Post(origurl string,args ...interface{}) (resp *response, err error) {
 
 	req.httpreq.Method = "POST"
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
+	
 
 	// set params ?a=b&b=c
 	//set Header
 	params := []map[string]string{}
 	datas := []map[string]string{} // POST
 	files := []map[string]string{} //post file
+	jdatas := make([]interface{},0)//post json
 
 	//reset Cookies,
 	//Client.Do can copy cookie from client.Jar to req.Header
@@ -417,6 +445,7 @@ func (req *request) Post(origurl string, args ...interface{}) (resp *response, e
 
 	for _, arg := range args {
 		switch a := arg.(type) {
+
 		// arg is Header , set to request header
 		case Header:
 
@@ -435,6 +464,9 @@ func (req *request) Post(origurl string, args ...interface{}) (resp *response, e
 		case Auth:
 			// a{username,password}
 			req.httpreq.SetBasicAuth(a[0], a[1])
+		case ToJson:
+			//fmt.Println(a)
+			jdatas = append(jdatas,a)//maybe json array ["","",""]
 		}
 	}
 
@@ -443,9 +475,15 @@ func (req *request) Post(origurl string, args ...interface{}) (resp *response, e
 	if len(files) > 0 {
 		req.buildFilesAndForms(files, datas)
 
-	} else {
+	} else if len(jdatas) >0 {
+
+		req.buildJsons(jdatas)
+
+	}else{
+
 		Forms := req.buildForms(datas...)
 		req.setBodyBytes(Forms) // set forms to body
+
 	}
 	//prepare to Do
 	URL, err := url.Parse(disturl)
@@ -459,6 +497,8 @@ func (req *request) Post(origurl string, args ...interface{}) (resp *response, e
 	req.RequestDebug()
 
 	res, err := req.Client.Do(req.httpreq)
+	//req.RequestDebug()
+	//fmt.Println(req.httpreq.Cookies())
 
 	if err != nil {
 		fmt.Println(err)
@@ -530,6 +570,28 @@ func (req *request) buildForms(datas ...map[string]string) (Forms url.Values) {
 	return Forms
 }
 
+
+//build post json array
+func (req *request) buildJsons(datas []interface{})([]byte){
+
+
+	var jsondata []byte
+	if len(datas) == 1{
+		
+		for _,data :=range datas{
+			jsondata,_= json.Marshal(data)
+			req.httpreq.Body = ioutil.NopCloser(bytes.NewBuffer(jsondata))
+			req.httpreq.ContentLength = int64(len(jsondata))
+		}
+
+	}else{
+		jsondata,_= json.Marshal(datas)
+		req.httpreq.Body = ioutil.NopCloser(bytes.NewBuffer(jsondata))
+		req.httpreq.ContentLength = int64(len(jsondata))
+	}
+	return jsondata
+}
+
 // open file for post upload files
 
 func openFile(filename string) *os.File {
@@ -544,5 +606,11 @@ func EnableKeepCookie(){
 
 	EnableCookie = true
 
+
+}
+
+func EnableDebug(){
+
+	StartDebug = true
 
 }

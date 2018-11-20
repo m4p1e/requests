@@ -114,6 +114,22 @@ func main() {
 
 }
 ```
+# Post Json
+
+``` go
+data := map[string]string{
+        "phone" : "11111111111",
+        "v" : "9a6cd7899d0d2a28f797b15147722474",
+      }
+
+header := requests.Header{
+      "Cookie" : "something",
+      "Content-Type" : "application/json; charset=UTF-8"
+    }
+
+req,_:=requests.Post("https://example.com",data,header)
+```
+data can be map, struct etc. if tranfers more than one data need to be json ,datas will be in josn array
 
 # Feature Support
   - Set headers
@@ -122,9 +138,9 @@ func main() {
   - Sessions with Cookie Persistence
   - Proxy
   - Authentication
-  - JSON
-  - Chunked Requests  ido
-  - Debug
+  - Json              done
+  - Chunked Requests  done
+  - Debug             done
   - SetTimeout
 
 # EnableCookie
@@ -137,6 +153,13 @@ requests.EnableKeepCookie()
 
 ```
 
+# EnableDebug
+
+it will show pre request and response
+
+``` go
+requests.EnableDebug()
+```
 
 # Set header
 
