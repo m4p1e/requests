@@ -129,7 +129,7 @@ header := requests.Header{
 
 req,_:=requests.Post("https://example.com",data,header)
 ```
-data can be map, struct etc. if tranfers more than one data need to be json ,datas will be in josn array
+data can be map, struct etc. if tranfers more than one data need to be json ,datas will be in json array
 
 # Feature Support
   - Set headers
